@@ -33,3 +33,27 @@ print(len(rezultatas))
 print(rezultatas[0])
 print(rezultatas[1])
 print(rezultatas[2])
+
+# Bloko padalijimas į 80 žodžių sąrašą
+# blokas - 64 baitų bytes objektas
+# Grąžina sąrašą 80 žodžių (32 bitų skaičių)
+# Pirmieji 16 žodžių gaunami tiesiogiai iš bloko (4 baitai = 1 žodis)
+# [b0][b1][b2][b3] -> žodis W[0]
+# Žodžiai 16-79 gaunami išplečiant ankstesnius žodžius
+def bloko_zodziai(blokas):
+    W = []
+    
+    # Pirmieji 16 žodžių - tiesiog skaitome iš bloko
+    for i in range(16):
+        zodis = int.from_bytes(blokas[i*4 : i*4+4], 'big')
+        W.append(zodis)
+    
+    # Žodžiai 16-79 - išplečiame
+    for i in range(16, 80):
+        W.append(rol(W[i-3] ^ W[i-8] ^ W[i-14] ^ W[i-16], 1))
+    
+    return W
+
+W = bloko_zodziai(padding(b"abc"))
+print(len(W))
+print(W[0])
