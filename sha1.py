@@ -1,12 +1,16 @@
+import sys
+
 # Sukimas kairėn (rotate left)
 # x - sukamas skaičius, n - kiek pozicijų sukti
 # Grąžina x pasukta n pozicijų kairėn (32 bitų ribose)
 def rol(x, n):
     return ((x << n) | (x >> (32 - n))) & 0xFFFFFFFF
 
-print(rol(1, 1))
-print(rol(1, 2))
-print(rol(8, 1))
+# print(rol(1, 1))
+# print(rol(1, 2))
+# print(rol(8, 1))
+
+
 
 # Pranešimo papildymas (padding)
 # msg - originalus pranešimas kaip baitų seka
@@ -28,11 +32,13 @@ def padding(msg):
     
     return msg
 
-rezultatas = padding(b"abc")
-print(len(rezultatas))
-print(rezultatas[0])
-print(rezultatas[1])
-print(rezultatas[2])
+# rezultatas = padding(b"abc")
+# print(len(rezultatas))
+# print(rezultatas[0])
+# print(rezultatas[1])
+# print(rezultatas[2])
+
+
 
 # Bloko padalijimas į 80 žodžių sąrašą
 # blokas - 64 baitų bytes objektas
@@ -54,9 +60,11 @@ def bloko_zodziai(blokas):
     
     return W
 
-W = bloko_zodziai(padding(b"abc"))
-print(len(W))
-print(W[0])
+# W = bloko_zodziai(padding(b"abc"))
+# print(len(W))
+# print(W[0])
+
+
 
 # Vieno 64 baitų bloko apdorojimas
 # blokas - 64 baitų bytes objektas
@@ -120,6 +128,51 @@ def sha1(pranesimas):
     # Sujungiam 5 žodžius į vieną hex eilutę
     return ''.join(f'{x:08x}' for x in h)
 
-print(sha1(b"abc"))
-print(sha1(b""))
-print(sha1(b"Labas pasauli"))
+# print(sha1(b"abc"))
+# print(sha1(b""))
+# print(sha1(b"Labas pasauli"))
+
+
+
+# Programa paleidžiama iš komandinės eilutės
+# Naudojimas: python3 sha1.py <įvesties_failas> [išvesties_failas]
+# įvesties_failas - failas kurio maišą skaičiuojame (privalomas)
+# išvesties_failas - failas į kurį rašome rezultatą (neprivalomas)
+def main():
+    # Tikriname ar nurodytas bent įvesties failas
+    if len(sys.argv) < 2:
+        print("Naudojimas: python3 sha1.py <įvesties_failas> [išvesties_failas]")
+        print("Pavyzdys: python3 sha1.py tekstas.txt rezultatas.txt")
+        return
+    
+    ivesties_failas = sys.argv[1]
+    
+    # Bandome atidaryti ir perskaityti failą baitais
+    try:
+        with open(ivesties_failas, 'rb') as f:
+            duomenys = f.read()
+    except FileNotFoundError:
+        print(f"Klaida: failas '{ivesties_failas}' nerastas.")
+        return
+    except Exception as e:
+        print(f"Klaida skaitant failą: {e}")
+        return
+    
+    # Skaičiuojame maišą
+    maisas = sha1(duomenys)
+    print(f"SHA-1({ivesties_failas}) = {maisas}")
+    # Atkomentuoti jei norite matyti maišą didžiosiomis raidėmis:
+    # print(f"SHA-1({ivesties_failas}) = {maisas.upper()}")
+    
+    # Jei nurodytas išvesties failas - įrašome rezultatą
+    if len(sys.argv) >= 3:
+        isvesties_failas = sys.argv[2]
+        try:
+            with open(isvesties_failas, 'w') as f:
+                f.write(maisas + '\n')
+            print(f"Rezultatas taip pat įrašytas į '{isvesties_failas}'")
+        except Exception as e:
+            print(f"Klaida rašant į failą: {e}")
+            return
+
+main()
