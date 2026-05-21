@@ -57,3 +57,69 @@ def bloko_zodziai(blokas):
 W = bloko_zodziai(padding(b"abc"))
 print(len(W))
 print(W[0])
+
+# Vieno 64 baitų bloko apdorojimas
+# blokas - 64 baitų bytes objektas
+# h - sąrašas [H0, H1, H2, H3, H4] - dabartinės maišos reikšmės
+# Grąžina atnaujintą [H0, H1, H2, H3, H4] sąrašą
+def apdoroti_bloka(blokas, h):
+    W = bloko_zodziai(blokas)
+    
+    # Nukopijuojame dabartines reikšmes
+    a, b, c, d, e = h[0], h[1], h[2], h[3], h[4]
+    
+    for i in range(80):
+        # Parenkame f ir K pagal raundo numerį
+        if i <= 19:
+            f = (b & c) | ((~b) & d)
+            K = 0x5A827999
+        elif i <= 39:
+            f = b ^ c ^ d
+            K = 0x6ED9EBA1
+        elif i <= 59:
+            f = (b & c) | (b & d) | (c & d)
+            K = 0x8F1BBCDC
+        else:
+            f = b ^ c ^ d
+            K = 0xCA62C1D6
+        
+        # Skaičiuojame naują reikšmę, & 0xFFFFFFFF - išlaikome 32 bitus
+        temp = (rol(a, 5) + f + e + K + W[i]) & 0xFFFFFFFF
+        
+        # Paslenkame kintamuosius
+        e = d
+        d = c
+        c = rol(b, 30)
+        b = a
+        a = temp
+    
+    # Pridedame prie pradinių reikšmių
+    return [
+        (h[0] + a) & 0xFFFFFFFF,
+        (h[1] + b) & 0xFFFFFFFF,
+        (h[2] + c) & 0xFFFFFFFF,
+        (h[3] + d) & 0xFFFFFFFF,
+        (h[4] + e) & 0xFFFFFFFF,
+    ]
+
+# Pagrindinė SHA-1 funkcija
+# pranesimas - baitų seka (bytes)
+# Grąžina SHA-1 maišos reikšmę kaip hex eilutę (40 simbolių)
+def sha1(pranesimas):
+    # Pradinės SHA-1 konstantos
+    h = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]
+    
+    # Padding
+    paddintas = padding(pranesimas)
+    
+    # Apdorojame kiekvieną 64 baitų bloką
+    for i in range(0, len(paddintas), 64):
+        blokas = paddintas[i : i+64]
+        h = apdoroti_bloka(blokas, h)
+    
+    # Sujungiam 5 žodžius į vieną hex eilutę
+    return ''.join(f'{x:08x}' for x in h)
+
+print(sha1(b"abc"))
+print(sha1(b""))
+print(sha1(b"Labas pasauli"))
