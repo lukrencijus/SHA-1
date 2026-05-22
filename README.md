@@ -40,13 +40,6 @@ Programą galima paleisti dviem būdais: naudojant Python interpretatorių arba 
 
 Aplanke esantis failas `sha1.bin` yra sukompiliuotas naudojant "Nuitka". Jis veikia tiesiogiai, be papildomo "Python" diegimo, tačiau yra skirtas tik 64-bitų Linux (`linux/amd64`) operacinėms sistemoms.
 
-Prieš paleidžiant pirmą kartą:  
-Suteikite failui vykdymo teises:
-
-```bash
-chmod +x sha1.bin
-```
-
 - Paleidimas:
 	- `./sha1.bin <įvesties_failas> [išvesties_failas]`
 - Parametrai:
