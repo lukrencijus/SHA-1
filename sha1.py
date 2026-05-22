@@ -141,8 +141,16 @@ def sha1(pranesimas):
 def main():
     # Tikriname ar nurodytas bent įvesties failas
     if len(sys.argv) < 2:
-        print("Naudojimas: python3 sha1.py <įvesties_failas> [išvesties_failas]")
-        print("Pavyzdys: python3 sha1.py tekstas.txt rezultatas.txt")
+        print("")
+        print("Klaida: nenurodytas įvesties failas")
+        print("")
+        print("Naudojimas:")
+        print("Jeigu per Python interpretatorių:")
+        print("     python3 sha1.py <įvesties_failas> [išvesties_failas]")
+        print("     Pavyzdys: python3 sha1.py tekstas.txt rezultatas.txt")
+        print("Jeigu per vykdomąjį failą:")
+        print("     ./sha1.bin <įvesties_failas> [išvesties_failas]")
+        print("     Pavyzdys: ./sha1.bin tekstas.txt rezultatas.txt")
         return
     
     ivesties_failas = sys.argv[1]
