@@ -5,6 +5,9 @@ import sys
 # Grąžina x pasukta n pozicijų kairėn (32 bitų ribose)
 def rol(x, n):
     return ((x << n) | (x >> (32 - n))) & 0xFFFFFFFF
+    # x << n stumia bitus kairėn, iš dešinės įpildo nulius
+    # x >> (32 - n) stumia bitus dešinėn, kad gautume išbėgusius bitus
+    # & 0xFFFFFFFF - išlaiko tik 32 bitus
 
 # print(rol(1, 1))
 # print(rol(1, 2))
@@ -17,9 +20,10 @@ def rol(x, n):
 # Grąžina papildytą pranešimą, kurio ilgis 64 baitų kartotinis
 def padding(msg):
     
-    ilgis_bitais = len(msg) * 8 # originalus ilgis bitais
+    ilgis_bitais = len(msg) * 8 # Išsaugome originalų ilgį prieš bet kokį keitimą (baitus paverčiame į bitus)
     
     msg += b'\x80' # pridedame 0x80 baitą (10000000 dvejetainiu)
+    # SHA-1 standarto reikalavimas - pažymime kur baigiasi tikras pranešimas ir prasideda padding
     
     # pridedame nulinius baitus kol ilgis % 64 == 56
     # 56 nes paskutiniai 8 baitai skirti ilgiui saugoti
@@ -41,20 +45,22 @@ def padding(msg):
 
 
 # Bloko padalijimas į 80 žodžių sąrašą
-# blokas - 64 baitų bytes objektas
-# Grąžina sąrašą 80 žodžių (32 bitų skaičių)
+# 64 baitų blokas padalijamas į 16 žodžių, o vėliau išplečiamas iki 80 žodžių
+# 1 žodis = 4 baitai = 32 bitai
+# Grąžina sąrašą 80 žodžių
 # Pirmieji 16 žodžių gaunami tiesiogiai iš bloko (4 baitai = 1 žodis)
 # [b0][b1][b2][b3] -> žodis W[0]
 # Žodžiai 16-79 gaunami išplečiant ankstesnius žodžius
 def bloko_zodziai(blokas):
-    W = []
+    W = [] # tuščias sąrašas kuriame kaupsime 80 žodžių
     
+    # Turime 64 baitų bloką. Pjaustome jį į 16 gabalų po 4 baitus, ir kiekvieną gabalą paverčiame į vieną 32 bitų skaičių
     # Pirmieji 16 žodžių - tiesiog skaitome iš bloko
     for i in range(16):
-        zodis = int.from_bytes(blokas[i*4 : i*4+4], 'big')
+        zodis = int.from_bytes(blokas[i*4 : i*4+4], 'big') # 4 baitus paverčia į vieną 32 bitų skaičių
         W.append(zodis)
     
-    # Žodžiai 16-79 - išplečiame
+    # Žodžiai 16-79 - Kiekvieną naują žodį gauname iš 4 ankstesnių žodžių - juos XOR'iname ir pasukame kairėn 1 bitu
     for i in range(16, 80):
         W.append(rol(W[i-3] ^ W[i-8] ^ W[i-14] ^ W[i-16], 1))
     
@@ -67,28 +73,28 @@ def bloko_zodziai(blokas):
 
 
 # Vieno 64 baitų bloko apdorojimas
-# blokas - 64 baitų bytes objektas
 # h - sąrašas [H0, H1, H2, H3, H4] - dabartinės maišos reikšmės
-# Grąžina atnaujintą [H0, H1, H2, H3, H4] sąrašą
+# Grąžina atnaujintą sąrašą
 def apdoroti_bloka(blokas, h):
     W = bloko_zodziai(blokas)
     
-    # Nukopijuojame dabartines reikšmes
+    # Nukopijuojame dabartines H reikšmes į laikinius kintamuosius
+    # originalios h reikšmės turi išlikti nepakitusios, nes pabaigoje prie jų pridėsime rezultatą, a,b,c,d,e nuolat keisis per raundus
     a, b, c, d, e = h[0], h[1], h[2], h[3], h[4]
     
     for i in range(80):
         # Parenkame f ir K pagal raundo numerį
-        if i <= 19:
-            f = (b & c) | ((~b) & d)
+        if i <= 19: # 0-19
+            f = (b & c) | ((~b) & d) # Jei b bitas = 1 - imame iš c, jei b bitas = 0 - imame iš d (choice funkcija)
             K = 0x5A827999
-        elif i <= 39:
-            f = b ^ c ^ d
+        elif i <= 39: # 20-39
+            f = b ^ c ^ d # XOR visi trys vienodai svarbūs (parity funkcija)
             K = 0x6ED9EBA1
-        elif i <= 59:
-            f = (b & c) | (b & d) | (c & d)
+        elif i <= 59: # 40-59
+            f = (b & c) | (b & d) | (c & d) # bent du iš trijų turi sutapti (majority funkcija)
             K = 0x8F1BBCDC
-        else:
-            f = b ^ c ^ d
+        else: # 60-79
+            f = b ^ c ^ d # vėl XOR kaip ir 20-39 raunde (parity funkcija)
             K = 0xCA62C1D6
         
         # Skaičiuojame naują reikšmę, & 0xFFFFFFFF - išlaikome 32 bitus
@@ -117,13 +123,13 @@ def sha1(pranesimas):
     # Pradinės SHA-1 konstantos
     h = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]
     
-    # Padding
+    # Padding, pranešimas papildomas iki 64 baitų kartotinio
     paddintas = padding(pranesimas)
     
     # Apdorojame kiekvieną 64 baitų bloką
     for i in range(0, len(paddintas), 64):
         blokas = paddintas[i : i+64]
-        h = apdoroti_bloka(blokas, h)
+        h = apdoroti_bloka(blokas, h) # Kiekvieno bloko rezultatas h perduodamas į kitą bloką
     
     # Sujungiam 5 žodžius į vieną hex eilutę
     return ''.join(f'{x:08x}' for x in h)
@@ -184,3 +190,5 @@ def main():
             return
 
 main()
+
+# main() -> nuskaito failą baitais -> sha1() -> padding() -> apdoroti_bloka() -> bloko_zodziai() -> rol() -> grąžina maišos reikšmę -> išveda rezultatą į ekraną ir į failą
